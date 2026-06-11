@@ -1,6 +1,8 @@
 # Ceci's Dream Dress Studio
 
-**Current version:** **v1.0.5** (see pink badge under the title + footer)
+**Current version:** **v1.0.6**
+
+Live: https://mrbiggles524.github.io/ceci-fashion/
 
 Bump `CECI_APP_VERSION` in `version.js` and every `?v=` in `index.html` on every update.
 

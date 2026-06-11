@@ -1,8 +1,20 @@
 (function () {
-  const APP_VERSION = window.CECI_APP_VERSION || "1.0.5";
+  function uniqueSvg(svg, ns) {
+    if (!svg || !ns) return svg;
+    return svg
+      .replace(/\bid="([^"]+)"/g, 'id="$1-' + ns + '"')
+      .replace(/url\(#([^)]+)\)/g, "url(#$1-" + ns + ")");
+  }
+
+  function boot() {
+  const APP_VERSION = window.CECI_APP_VERSION || "1.0.6";
   const LIB = window.CECI_STICKERS;
-  if (!LIB || !LIB.items) {
-    document.body.innerHTML = "<p style='padding:2rem;font-family:sans-serif'>Could not load stickers. Please refresh the page.</p>";
+  if (!LIB || !LIB.items || !LIB.items.length) {
+    const t = document.getElementById("toast");
+    if (t) {
+      t.textContent = "Stickers loading… refresh if empty!";
+      t.classList.add("show");
+    }
     return;
   }
   const STICKER_MAP = Object.fromEntries(LIB.items.map((s) => [s.id, s]));
@@ -65,7 +77,7 @@
   if (foot) foot.textContent = verLabel;
   document.title = "Ceci's Dream Dress Studio " + verLabel;
 
-  const gCtx = els.glitterCanvas.getContext("2d");
+  const gCtx = els.glitterCanvas ? els.glitterCanvas.getContext("2d") : null;
   let glitterDrawing = false;
 
   function toast(msg) {
@@ -342,7 +354,7 @@
       btn.type = "button";
       btn.className = "palette-item" + (state.pickedStickerId === item.id ? " is-picked" : "");
       btn.title = item.name;
-      btn.innerHTML = item.svg;
+      btn.innerHTML = uniqueSvg(item.svg, "p-" + item.id);
       btn.addEventListener("click", () => {
         if (state.tool !== "sticker") setTool("sticker");
         state.pickedStickerId = state.pickedStickerId === item.id ? null : item.id;
@@ -414,7 +426,7 @@
       el.style.top = s.y + "%";
       el.style.zIndex = s.z;
       el.style.width = def.w + "px";
-      el.innerHTML = def.svg;
+      el.innerHTML = uniqueSvg(def.svg, s.id);
       el.style.transform = `translate(-50%, -50%) scale(${s.scale * s.flip}, ${s.scale}) rotate(${s.rotation}deg)`;
       setupDrag(el, s, "sticker");
       el.addEventListener("click", (e) => {
@@ -511,6 +523,7 @@
 
   /* ---- Glitter ---- */
   function resizeGlitterCanvas() {
+    if (!els.glitterCanvas || !gCtx) return;
     const r = els.canvasWrap.getBoundingClientRect();
     if (r.width < 1 || r.height < 1) return;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -547,6 +560,7 @@
   }
 
   function redrawGlitter() {
+    if (!els.glitterCanvas || !gCtx) return;
     const r = els.canvasWrap.getBoundingClientRect();
     const w = r.width;
     const h = r.height;
@@ -815,4 +829,11 @@
   setTheme("unicorn");
   setTool("sticker");
   requestAnimationFrame(resizeGlitterCanvas);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
 })();

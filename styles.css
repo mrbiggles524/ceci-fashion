@@ -628,6 +628,7 @@ body {
 
 .palette-item {
   aspect-ratio: 1;
+  min-height: 72px;
   display: grid;
   place-items: center;
   padding: 0.35rem;
@@ -698,11 +699,17 @@ body {
 
 .toast.show { transform: translateX(-50%) translateY(0); }
 
-/* Mobile */
+/* Mobile — dress then stickers (so stickers aren't buried) */
 @media (max-width: 900px) {
   .game {
     grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
   }
+
+  .panel--left { order: 3; }
+  .stage { order: 1; }
+  .panel--right { order: 2; }
 
   .panel--left {
     display: grid;
