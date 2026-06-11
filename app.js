@@ -95,31 +95,51 @@
   function setCustomDress(url) {
     state.customDress = true;
     state.uploadUrl = url;
-    els.dressPhoto.src = url;
-    els.dressPhoto.hidden = false;
-    els.dressSvg.style.display = "none";
+    els.canvasWrap.classList.add("has-upload");
+    els.dressSvg.classList.add("is-hidden");
     els.templateControls.hidden = true;
     els.btnTemplate.hidden = false;
-    toast("Your dress is ready to decorate! 📷");
+
+    els.dressPhoto.onload = () => {
+      els.dressPhoto.classList.add("is-visible");
+      resizeGlitterCanvas();
+      toast("Your dress is ready to decorate! 📷");
+    };
+    els.dressPhoto.onerror = () => {
+      toast("Couldn't load that photo — try JPG or PNG!");
+      useTemplate();
+    };
+    els.dressPhoto.src = url;
+    if (els.dressPhoto.complete) els.dressPhoto.onload();
   }
 
   function useTemplate() {
     state.customDress = false;
     state.uploadUrl = null;
-    els.dressPhoto.hidden = true;
-    els.dressSvg.style.display = "block";
+    els.canvasWrap.classList.remove("has-upload");
+    els.dressPhoto.classList.remove("is-visible");
+    els.dressPhoto.removeAttribute("src");
+    els.dressSvg.classList.remove("is-hidden");
     els.templateControls.hidden = false;
     els.btnTemplate.hidden = true;
+    document.getElementById("dressUpload").value = "";
     applyDressStyle();
+    resizeGlitterCanvas();
     toast("Template dress is back!");
   }
 
   document.getElementById("dressUpload")?.addEventListener("change", (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith("image/")) return toast("Please pick a photo!");
+    const ok =
+      (file.type && file.type.startsWith("image/")) ||
+      /\.(jpe?g|png|gif|webp|heic|heif|bmp|avif)$/i.test(file.name);
+    if (!ok) return toast("Please pick a photo (JPG, PNG, etc.)!");
     const reader = new FileReader();
-    reader.onload = () => setCustomDress(reader.result);
+    reader.onload = () => {
+      if (typeof reader.result === "string") setCustomDress(reader.result);
+    };
+    reader.onerror = () => toast("Couldn't read that file — try again!");
     reader.readAsDataURL(file);
   });
 
@@ -397,16 +417,21 @@
   /* ---- Glitter ---- */
   function resizeGlitterCanvas() {
     const r = els.canvasWrap.getBoundingClientRect();
-    els.glitterCanvas.width = r.width * 2;
-    els.glitterCanvas.height = r.height * 2;
+    if (r.width < 1 || r.height < 1) return;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    els.glitterCanvas.width = Math.round(r.width * dpr);
+    els.glitterCanvas.height = Math.round(r.height * dpr);
     els.glitterCanvas.style.width = r.width + "px";
     els.glitterCanvas.style.height = r.height + "px";
+    gCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
     redrawGlitter();
   }
 
   function drawGlitterPoint(xPct, yPct) {
-    const w = els.glitterCanvas.width;
-    const h = els.glitterCanvas.height;
+    const r = els.canvasWrap.getBoundingClientRect();
+    const w = r.width;
+    const h = r.height;
+    if (!w || !h) return;
     const x = (xPct / 100) * w;
     const y = (yPct / 100) * h;
     const size = 4 + Math.random() * 8;
@@ -427,19 +452,50 @@
   }
 
   function redrawGlitter() {
-    gCtx.clearRect(0, 0, els.glitterCanvas.width, els.glitterCanvas.height);
+    const r = els.canvasWrap.getBoundingClientRect();
+    const w = r.width;
+    const h = r.height;
+    const c = els.glitterCanvas;
+    if (!w || !h || !c.width) return;
+    gCtx.save();
+    gCtx.setTransform(1, 0, 0, 1, 0, 0);
+    gCtx.clearRect(0, 0, c.width, c.height);
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    gCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
     state.glitter.forEach((g) => {
-      const x = (g.x / 100) * els.glitterCanvas.width;
-      const y = (g.y / 100) * els.glitterCanvas.height;
-      gCtx.save();
+      const x = (g.x / 100) * w;
+      const y = (g.y / 100) * h;
       gCtx.fillStyle = g.color;
       gCtx.shadowColor = g.color;
       gCtx.shadowBlur = 6;
       gCtx.beginPath();
       gCtx.arc(x, y, g.size, 0, Math.PI * 2);
       gCtx.fill();
-      gCtx.restore();
     });
+    gCtx.restore();
+  }
+
+  function clearAllDecorations() {
+    const had =
+      state.stickers.length > 0 ||
+      state.texts.length > 0 ||
+      state.glitter.length > 0;
+    if (had) pushHistory();
+
+    state.stickers = [];
+    state.texts = [];
+    state.glitter = [];
+    state.selectedId = null;
+    state.pickedStickerId = null;
+
+    els.layer.innerHTML = "";
+    els.textLayer.innerHTML = "";
+    redrawGlitter();
+    updateEditBar();
+    renderPalette();
+    els.selectedTip.hidden = true;
+
+    toast(had ? "All decorations cleared!" : "Nothing to clear yet!");
   }
 
   function canvasPoint(e) {
@@ -566,16 +622,7 @@
     renderPalette();
   });
 
-  document.getElementById("btnClearDeco")?.addEventListener("click", () => {
-    if (!state.stickers.length && !state.texts.length && !state.glitter.length) return;
-    pushHistory();
-    state.stickers = [];
-    state.texts = [];
-    state.glitter = [];
-    state.selectedId = null;
-    renderAll();
-    toast("All decorations cleared!");
-  });
+  document.getElementById("btnClearDeco")?.addEventListener("click", clearAllDecorations);
 
   document.getElementById("btnUndo")?.addEventListener("click", undo);
 

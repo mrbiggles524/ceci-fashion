@@ -20,10 +20,10 @@
   <main class="game">
     <aside class="panel panel--left">
       <h2>Your Dress</h2>
-      <label class="upload-btn">
-        <input type="file" id="dressUpload" accept="image/*" hidden />
+      <label class="upload-btn" for="dressUpload">
         📷 Upload My Dress Photo
       </label>
+      <input type="file" id="dressUpload" class="file-input" accept="image/*,.heic,.heif" />
       <button class="link-btn" id="btnTemplate" type="button" hidden>← Use template dress instead</button>
 
       <h2>Theme</h2>
@@ -51,7 +51,7 @@
       <div class="stage__frame">
         <div class="stage__label" id="themeLabel">Unicorn Magic</div>
         <div class="canvas-wrap" id="canvasWrap">
-          <img class="dress-photo" id="dressPhoto" alt="Your uploaded dress" hidden />
+          <img class="dress-photo" id="dressPhoto" alt="Your uploaded dress" />
           <svg class="dress-svg" id="dressSvg" viewBox="0 0 320 480" aria-label="Dress template">
             <defs>
               <pattern id="pat-dots" width="12" height="12" patternUnits="userSpaceOnUse"><circle cx="6" cy="6" r="2.5" fill="currentColor" opacity="0.35"/></pattern>
