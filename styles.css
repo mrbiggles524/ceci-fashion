@@ -102,15 +102,21 @@ body {
 
 .version-badge {
   display: inline-block;
-  margin: 0.5rem 0 0;
-  padding: 0.2rem 0.65rem;
+  margin: 0.6rem 0 0;
+  padding: 0.35rem 1rem;
   border-radius: 999px;
-  background: var(--bg);
-  border: 1px solid var(--pink-200, #ffc8e8);
-  font-size: 0.68rem;
+  background: #fff;
+  border: 2px solid var(--accent);
+  font-size: 0.95rem;
   font-weight: 800;
   color: var(--accent2);
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
+  box-shadow: 0 4px 12px var(--glow);
+}
+
+.version-foot {
+  color: var(--accent);
+  font-size: 0.85rem;
 }
 
 .upload-status {
@@ -209,8 +215,10 @@ body {
   margin-bottom: 0.5rem;
   transition: transform 0.2s;
   border: none;
+  -webkit-tap-highlight-color: transparent;
 }
 .upload-btn:hover { transform: scale(1.02); }
+.upload-btn:active { transform: scale(0.98); }
 
 .file-input {
   position: absolute;
@@ -222,6 +230,7 @@ body {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+  opacity: 0;
 }
 
 .link-btn {
@@ -250,10 +259,14 @@ body {
 
 .swatch {
   aspect-ratio: 1;
+  min-height: 44px;
+  min-width: 44px;
   border-radius: 12px;
   border: 3px solid transparent;
   cursor: pointer;
   transition: transform 0.15s;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 .swatch:hover { transform: scale(1.1); }
@@ -324,32 +337,7 @@ body {
   background: #f8f8f8;
 }
 
-/* Android-friendly photo layers */
-.dress-photo-bg {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 0;
-  background-color: #fff;
-  background-position: center center;
-  background-repeat: no-repeat;
-  background-size: contain;
-  -webkit-background-size: contain;
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  -webkit-backface-visibility: hidden;
-  backface-visibility: hidden;
-}
-
-.dress-photo-bg.is-visible {
-  opacity: 1;
-  visibility: visible;
-  z-index: 1;
-}
-
+/* Uploaded dress photo — single img layer (works on Android) */
 .dress-photo {
   position: absolute;
   top: 0;
@@ -370,11 +358,17 @@ body {
 .dress-photo.is-visible {
   opacity: 1;
   visibility: visible;
-  z-index: 1;
+  z-index: 5;
 }
 
+.canvas-wrap.has-upload .dress-svg {
 .canvas-wrap.has-upload .glitter-canvas {
-  z-index: 2;
+  z-index: 6;
+}
+
+.canvas-wrap.has-upload .stickers,
+.canvas-wrap.has-upload .text-layer {
+  z-index: 7;
 }
 
 .dress-svg {

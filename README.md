@@ -1,8 +1,8 @@
 # Ceci's Dream Dress Studio
 
-**Current version:** see `version.js` → `CECI_APP_VERSION` (also shown in app footer).
+**Current version:** **v1.0.5** (see pink badge under the title + footer)
 
-Bump `CECI_APP_VERSION` in `version.js` and the `?v=` on the version.js script tag in `index.html` on every update so phones load fresh files.
+Bump `CECI_APP_VERSION` in `version.js` and every `?v=` in `index.html` on every update.
 
 ## Play locally
 

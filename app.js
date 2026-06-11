@@ -1,6 +1,10 @@
 (function () {
-  const APP_VERSION = window.CECI_APP_VERSION || "1.0.4";
+  const APP_VERSION = window.CECI_APP_VERSION || "1.0.5";
   const LIB = window.CECI_STICKERS;
+  if (!LIB || !LIB.items) {
+    document.body.innerHTML = "<p style='padding:2rem;font-family:sans-serif'>Could not load stickers. Please refresh the page.</p>";
+    return;
+  }
   const STICKER_MAP = Object.fromEntries(LIB.items.map((s) => [s.id, s]));
 
   const THEMES = {
@@ -17,7 +21,6 @@
     pattern: "solid",
     customDress: false,
     uploadUrl: null,
-    uploadBlobUrl: null,
     tool: "sticker",
     stickerCat: "all",
     pickedStickerId: null,
@@ -35,7 +38,6 @@
     body: document.body,
     canvasWrap: document.getElementById("canvasWrap"),
     dressPhoto: document.getElementById("dressPhoto"),
-    dressPhotoBg: document.getElementById("dressPhotoBg"),
     dressSvg: document.getElementById("dressSvg"),
     glitterCanvas: document.getElementById("glitterCanvas"),
     layer: document.getElementById("stickerLayer"),
@@ -57,8 +59,10 @@
 
   /* ---- Version display ---- */
   const verLabel = "v" + APP_VERSION;
-  document.getElementById("versionBadge") && (document.getElementById("versionBadge").textContent = verLabel);
-  document.getElementById("versionFoot") && (document.getElementById("versionFoot").textContent = verLabel);
+  const badge = document.getElementById("versionBadge");
+  const foot = document.getElementById("versionFoot");
+  if (badge) badge.textContent = verLabel;
+  if (foot) foot.textContent = verLabel;
   document.title = "Ceci's Dream Dress Studio " + verLabel;
 
   const gCtx = els.glitterCanvas.getContext("2d");
@@ -108,74 +112,32 @@
     els.uploadStatus.hidden = !show;
   }
 
-  function revokeUploadBlob() {
-    if (state.uploadBlobUrl) {
-      try { URL.revokeObjectURL(state.uploadBlobUrl); } catch (_) { /* ignore */ }
-      state.uploadBlobUrl = null;
-    }
-  }
-
-  function dataUrlToBlobUrl(dataUrl) {
-    try {
-      const parts = dataUrl.split(",");
-      if (parts.length < 2) return null;
-      const mime = (parts[0].match(/data:([^;]+)/) || [])[1] || "image/jpeg";
-      const bin = atob(parts[1]);
-      const bytes = new Uint8Array(bin.length);
-      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-      const blob = new Blob([bytes], { type: mime });
-      return URL.createObjectURL(blob);
-    } catch {
-      return null;
-    }
-  }
-
-  function applyPhotoLayers(url) {
-    els.dressPhotoBg.style.backgroundImage = 'url("' + url + '")';
-    els.dressPhotoBg.classList.add("is-visible");
+  function showUploadedPhoto(dataUrl) {
     els.dressSvg.classList.add("is-hidden");
     els.canvasWrap.classList.add("has-upload");
-  }
+    setUploadStatus("Loading photo…", true);
 
-  function showUploadedPhoto(dataUrl) {
-    applyPhotoLayers(dataUrl);
-    revokeUploadBlob();
-    const blobUrl = dataUrlToBlobUrl(dataUrl);
-    if (blobUrl) state.uploadBlobUrl = blobUrl;
-    const imgSrc = blobUrl || dataUrl;
-
-    els.dressPhoto.classList.remove("is-visible");
     els.dressPhoto.onload = () => {
-      const done = () => {
-        els.dressPhoto.classList.add("is-visible");
-        setUploadStatus("Your photo is loaded!", true);
-        requestAnimationFrame(() => {
-          resizeGlitterCanvas();
-          setTimeout(resizeGlitterCanvas, 100);
-          setTimeout(resizeGlitterCanvas, 400);
-        });
-      };
-      if (els.dressPhoto.decode) {
-        els.dressPhoto.decode().then(done).catch(done);
-      } else {
-        done();
-      }
+      els.dressPhoto.classList.add("is-visible");
+      setUploadStatus("Your photo is loaded! Tap to add stickers ✨", true);
+      requestAnimationFrame(() => {
+        resizeGlitterCanvas();
+        setTimeout(resizeGlitterCanvas, 150);
+        setTimeout(resizeGlitterCanvas, 500);
+      });
     };
     els.dressPhoto.onerror = () => {
-      els.dressPhoto.classList.remove("is-visible");
-      setUploadStatus("Photo showing via background layer", true);
-      requestAnimationFrame(resizeGlitterCanvas);
+      toast("Photo failed — try a JPG from your gallery");
+      setUploadStatus("Upload failed — try another photo", true);
     };
-    els.dressPhoto.src = imgSrc;
+    els.dressPhoto.classList.remove("is-visible");
+    els.dressPhoto.src = dataUrl;
     if (els.dressPhoto.complete && els.dressPhoto.naturalWidth > 0) {
       els.dressPhoto.onload();
     }
   }
 
   function hideUploadedPhoto() {
-    revokeUploadBlob();
-    els.dressPhotoBg.style.backgroundImage = "";
-    els.dressPhotoBg.classList.remove("is-visible");
     els.dressPhoto.classList.remove("is-visible");
     els.dressPhoto.onload = null;
     els.dressPhoto.onerror = null;
@@ -218,7 +180,6 @@
     state.uploadUrl = url;
     els.templateControls.hidden = true;
     els.btnTemplate.hidden = false;
-    setUploadStatus("Loading photo…", true);
     showUploadedPhoto(url);
     preparePhotoUrl(url, (readyUrl) => {
       state.uploadUrl = readyUrl;
@@ -256,19 +217,23 @@
     reader.readAsDataURL(file);
   }
 
-  document.getElementById("btnUpload")?.addEventListener("click", () => {
-    els.dressUpload?.click();
+  document.getElementById("btnUpload")?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") els.dressUpload?.click();
   });
 
   els.dressUpload?.addEventListener("change", (e) => {
     handleFilePick(e.target.files?.[0]);
+    e.target.value = "";
   });
 
   els.btnTemplate?.addEventListener("click", useTemplate);
 
   /* ---- Template dress colors ---- */
   function applyDressStyle() {
-    document.querySelectorAll(".dress-part").forEach((p) => p.setAttribute("fill", state.color));
+    els.body.style.setProperty("--dress", state.color);
+    document.querySelectorAll(".dress-part").forEach((p) => {
+      p.style.fill = state.color;
+    });
     updatePatternOverlay();
   }
 
@@ -277,7 +242,11 @@
     const svg = els.dressSvg;
     if (state.pattern === "solid" || state.customDress) {
       overlay?.remove();
-      if (!state.customDress) document.querySelectorAll(".dress-part").forEach((p) => p.setAttribute("fill", state.color));
+      if (!state.customDress) {
+        document.querySelectorAll(".dress-part").forEach((p) => {
+          p.style.fill = state.color;
+        });
+      }
       return;
     }
     if (!overlay) {
@@ -287,6 +256,7 @@
       svg.appendChild(overlay);
     }
     overlay.innerHTML = "";
+    overlay.style.color = state.color;
     [
       "M110 95 L160 75 L210 95 L205 175 L115 175 Z",
       "M115 175 L205 175 L245 420 L75 420 Z",
@@ -298,7 +268,9 @@
       p.setAttribute("fill", `url(#pat-${state.pattern})`);
       overlay.appendChild(p);
     });
-    document.querySelectorAll(".dress-part").forEach((p) => p.setAttribute("fill", state.color));
+    document.querySelectorAll(".dress-part").forEach((p) => {
+      p.style.fill = state.color;
+    });
   }
 
   function renderSwatches() {
@@ -308,10 +280,12 @@
       btn.type = "button";
       btn.className = "swatch" + (c === state.color ? " is-active" : "");
       btn.style.background = c;
+      btn.setAttribute("aria-label", "Dress color " + c);
       btn.addEventListener("click", () => {
         state.color = c;
         renderSwatches();
         applyDressStyle();
+        toast("Dress color changed!");
       });
       els.swatches.appendChild(btn);
     });
