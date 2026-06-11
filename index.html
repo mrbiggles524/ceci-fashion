@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bubblegum+Sans&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet" />
-  <script src="version.js?v=1.0.3"></script>
+  <script src="version.js?v=1.0.4"></script>
   <script>
     document.write('<link rel="stylesheet" href="styles.css?v=' + window.CECI_APP_VERSION + '" />');
   </script>
@@ -58,7 +58,7 @@
         <div class="canvas-wrap" id="canvasWrap">
           <!-- Photo layer: bg div works reliably on Android + img for save/export -->
           <div class="dress-photo-bg" id="dressPhotoBg" aria-hidden="true"></div>
-          <img class="dress-photo" id="dressPhoto" alt="Your uploaded dress" crossorigin="anonymous" />
+          <img class="dress-photo" id="dressPhoto" alt="Your uploaded dress" decoding="async" loading="eager" />
           <svg class="dress-svg" id="dressSvg" viewBox="0 0 320 480" aria-label="Dress template">
             <defs>
               <pattern id="pat-dots" width="12" height="12" patternUnits="userSpaceOnUse"><circle cx="6" cy="6" r="2.5" fill="currentColor" opacity="0.35"/></pattern>

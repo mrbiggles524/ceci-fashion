@@ -1,5 +1,5 @@
 (function () {
-  const APP_VERSION = window.CECI_APP_VERSION || "1.0.3";
+  const APP_VERSION = window.CECI_APP_VERSION || "1.0.4";
   const LIB = window.CECI_STICKERS;
   const STICKER_MAP = Object.fromEntries(LIB.items.map((s) => [s.id, s]));
 
@@ -17,6 +17,7 @@
     pattern: "solid",
     customDress: false,
     uploadUrl: null,
+    uploadBlobUrl: null,
     tool: "sticker",
     stickerCat: "all",
     pickedStickerId: null,
@@ -107,25 +108,77 @@
     els.uploadStatus.hidden = !show;
   }
 
-  function showUploadedPhoto(url) {
-    els.dressPhotoBg.style.backgroundImage = "url(" + url + ")";
+  function revokeUploadBlob() {
+    if (state.uploadBlobUrl) {
+      try { URL.revokeObjectURL(state.uploadBlobUrl); } catch (_) { /* ignore */ }
+      state.uploadBlobUrl = null;
+    }
+  }
+
+  function dataUrlToBlobUrl(dataUrl) {
+    try {
+      const parts = dataUrl.split(",");
+      if (parts.length < 2) return null;
+      const mime = (parts[0].match(/data:([^;]+)/) || [])[1] || "image/jpeg";
+      const bin = atob(parts[1]);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      const blob = new Blob([bytes], { type: mime });
+      return URL.createObjectURL(blob);
+    } catch {
+      return null;
+    }
+  }
+
+  function applyPhotoLayers(url) {
+    els.dressPhotoBg.style.backgroundImage = 'url("' + url + '")';
     els.dressPhotoBg.classList.add("is-visible");
-    els.dressPhoto.src = url;
-    els.dressPhoto.classList.add("is-visible");
     els.dressSvg.classList.add("is-hidden");
     els.canvasWrap.classList.add("has-upload");
-    setUploadStatus("Your photo is loaded!", true);
-    requestAnimationFrame(() => {
-      resizeGlitterCanvas();
-      setTimeout(resizeGlitterCanvas, 100);
-      setTimeout(resizeGlitterCanvas, 400);
-    });
+  }
+
+  function showUploadedPhoto(dataUrl) {
+    applyPhotoLayers(dataUrl);
+    revokeUploadBlob();
+    const blobUrl = dataUrlToBlobUrl(dataUrl);
+    if (blobUrl) state.uploadBlobUrl = blobUrl;
+    const imgSrc = blobUrl || dataUrl;
+
+    els.dressPhoto.classList.remove("is-visible");
+    els.dressPhoto.onload = () => {
+      const done = () => {
+        els.dressPhoto.classList.add("is-visible");
+        setUploadStatus("Your photo is loaded!", true);
+        requestAnimationFrame(() => {
+          resizeGlitterCanvas();
+          setTimeout(resizeGlitterCanvas, 100);
+          setTimeout(resizeGlitterCanvas, 400);
+        });
+      };
+      if (els.dressPhoto.decode) {
+        els.dressPhoto.decode().then(done).catch(done);
+      } else {
+        done();
+      }
+    };
+    els.dressPhoto.onerror = () => {
+      els.dressPhoto.classList.remove("is-visible");
+      setUploadStatus("Photo showing via background layer", true);
+      requestAnimationFrame(resizeGlitterCanvas);
+    };
+    els.dressPhoto.src = imgSrc;
+    if (els.dressPhoto.complete && els.dressPhoto.naturalWidth > 0) {
+      els.dressPhoto.onload();
+    }
   }
 
   function hideUploadedPhoto() {
+    revokeUploadBlob();
     els.dressPhotoBg.style.backgroundImage = "";
     els.dressPhotoBg.classList.remove("is-visible");
     els.dressPhoto.classList.remove("is-visible");
+    els.dressPhoto.onload = null;
+    els.dressPhoto.onerror = null;
     els.dressPhoto.removeAttribute("src");
     els.dressSvg.classList.remove("is-hidden");
     els.canvasWrap.classList.remove("has-upload");
@@ -166,9 +219,10 @@
     els.templateControls.hidden = true;
     els.btnTemplate.hidden = false;
     setUploadStatus("Loading photo…", true);
+    showUploadedPhoto(url);
     preparePhotoUrl(url, (readyUrl) => {
       state.uploadUrl = readyUrl;
-      showUploadedPhoto(readyUrl);
+      if (readyUrl !== url) showUploadedPhoto(readyUrl);
       toast("Your dress is ready to decorate! 📷");
     });
   }
