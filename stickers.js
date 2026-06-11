@@ -1,0 +1,31 @@
+/** Realistic SVG stickers for Ceci's Dress Studio */
+window.CECI_STICKERS = {
+  categories: [
+    { id: "bows", label: "Bows & Ribbons" },
+    { id: "jewels", label: "Jewels & Pearls" },
+    { id: "flowers", label: "Flowers" },
+    { id: "magic", label: "Unicorn & Fairy" },
+  ],
+  items: [
+    { id: "bow-satin", cat: "bows", name: "Satin Bow", w: 56, svg: `<svg viewBox="0 0 64 48" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="b1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ff9ec4"/><stop offset="100%" stop-color="#e84393"/></linearGradient></defs><path d="M32 22 L8 8 Q4 24 8 40 L32 26 Z" fill="url(#b1)"/><path d="M32 22 L56 8 Q60 24 56 40 L32 26 Z" fill="url(#b1)"/><circle cx="32" cy="24" r="7" fill="#ff6eb4"/><circle cx="32" cy="24" r="4" fill="#ffc8e0"/></svg>` },
+    { id: "ribbon-gold", cat: "bows", name: "Gold Ribbon", w: 52, svg: `<svg viewBox="0 0 64 40" xmlns="http://www.w3.org/2000/svg"><path d="M4 20 Q20 4 32 20 Q44 36 60 20 L60 28 Q44 44 32 28 Q20 12 4 28 Z" fill="#ffd93d" stroke="#e8b923" stroke-width="1.5"/></svg>` },
+    { id: "lace-trim", cat: "bows", name: "Lace Trim", w: 64, svg: `<svg viewBox="0 0 80 24" xmlns="http://www.w3.org/2000/svg"><path d="M0 12 Q5 4 10 12 Q15 20 20 12 Q25 4 30 12 Q35 20 40 12 Q45 4 50 12 Q55 20 60 12 Q65 4 70 12 Q75 20 80 12 L80 24 L0 24 Z" fill="#fff" stroke="#ffc8e8"/></svg>` },
+    { id: "gem-ruby", cat: "jewels", name: "Ruby Gem", w: 40, svg: `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><polygon points="24,4 42,18 24,44 6,18" fill="#e84393" stroke="#fff" stroke-width="1"/><polygon points="24,4 42,18 24,22 6,18" fill="#fff" opacity="0.25"/><circle cx="18" cy="16" r="3" fill="#fff" opacity="0.6"/></svg>` },
+    { id: "gem-sapphire", cat: "jewels", name: "Sapphire", w: 40, svg: `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><polygon points="24,4 42,18 24,44 6,18" fill="#4d96ff" stroke="#fff" stroke-width="1"/><circle cx="17" cy="15" r="2.5" fill="#fff" opacity="0.7"/></svg>` },
+    { id: "pearls", cat: "jewels", name: "Pearl Strand", w: 58, svg: `<svg viewBox="0 0 72 32" xmlns="http://www.w3.org/2000/svg"><ellipse cx="12" cy="18" rx="7" ry="7" fill="#fff8f0" stroke="#e8d4c8"/><ellipse cx="26" cy="20" rx="7" ry="7" fill="#fff8f0" stroke="#e8d4c8"/><ellipse cx="40" cy="18" rx="7" ry="7" fill="#fff8f0" stroke="#e8d4c8"/><ellipse cx="54" cy="16" rx="7" ry="7" fill="#fff8f0" stroke="#e8d4c8"/><path d="M12 18 Q26 28 40 18 Q54 8 60 14" fill="none" stroke="#ffd93d" stroke-width="1.5" opacity="0.6"/></svg>` },
+    { id: "crown", cat: "jewels", name: "Tiara Crown", w: 52, svg: `<svg viewBox="0 0 64 40" xmlns="http://www.w3.org/2000/svg"><path d="M8 32 L12 14 L20 24 L32 8 L44 24 L52 14 L56 32 Z" fill="#ffd93d" stroke="#e8b923" stroke-width="1.5"/><circle cx="32" cy="12" r="4" fill="#ff6eb4" stroke="#fff"/><circle cx="16" cy="22" r="3" fill="#4d96ff"/><circle cx="48" cy="22" r="3" fill="#4d96ff"/><rect x="6" y="32" width="52" height="6" rx="2" fill="#ffe566"/></svg>` },
+    { id: "rose-pink", cat: "flowers", name: "Pink Rose", w: 48, svg: `<svg viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg"><circle cx="28" cy="26" r="10" fill="#ff85b3"/><circle cx="22" cy="22" r="8" fill="#ff9ec4"/><circle cx="34" cy="22" r="8" fill="#ff6eb4"/><circle cx="28" cy="24" r="5" fill="#ffc8e0"/><path d="M28 34 Q26 44 28 52" stroke="#5cd85a" stroke-width="3" fill="none"/></svg>` },
+    { id: "rose-red", cat: "flowers", name: "Red Rose", w: 48, svg: `<svg viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg"><circle cx="28" cy="26" r="10" fill="#e84393"/><circle cx="22" cy="22" r="8" fill="#ff6b8a"/><circle cx="34" cy="22" r="8" fill="#c9184a"/><circle cx="28" cy="24" r="5" fill="#ff9ec4"/><path d="M28 34 Q26 44 28 52" stroke="#3cb371" stroke-width="3" fill="none"/></svg>` },
+    { id: "butterfly", cat: "flowers", name: "Butterfly", w: 50, svg: `<svg viewBox="0 0 60 44" xmlns="http://www.w3.org/2000/svg"><ellipse cx="18" cy="18" rx="16" ry="14" fill="#c56cf0" opacity="0.85"/><ellipse cx="42" cy="18" rx="16" ry="14" fill="#ff9ff3" opacity="0.85"/><ellipse cx="30" cy="22" rx="3" ry="10" fill="#4a2c6a"/><circle cx="30" cy="12" r="3" fill="#4a2c6a"/></svg>` },
+    { id: "daisy", cat: "flowers", name: "Daisy", w: 44, svg: `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><g fill="#fff"><ellipse cx="24" cy="10" rx="6" ry="10"/><ellipse cx="24" cy="38" rx="6" ry="10"/><ellipse cx="10" cy="24" rx="10" ry="6"/><ellipse cx="38" cy="24" rx="10" ry="6"/></g><circle cx="24" cy="24" r="8" fill="#ffd93d"/></svg>` },
+    { id: "unicorn", cat: "magic", name: "Unicorn", w: 54, svg: `<svg viewBox="0 0 60 56" xmlns="http://www.w3.org/2000/svg"><ellipse cx="32" cy="36" rx="18" ry="14" fill="#fff" stroke="#ffc8e8" stroke-width="1.5"/><circle cx="44" cy="22" r="12" fill="#fff" stroke="#ffc8e8"/><polygon points="44,8 48,20 40,20" fill="#ffd93d"/><circle cx="48" cy="20" r="2" fill="#4a2c6a"/><circle cx="40" cy="20" r="2" fill="#4a2c6a"/></svg>` },
+    { id: "fairy-wings", cat: "magic", name: "Fairy Wings", w: 60, svg: `<svg viewBox="0 0 72 48" xmlns="http://www.w3.org/2000/svg"><path d="M36 24 Q8 4 4 24 Q8 44 36 24" fill="#a8edea" opacity="0.75" stroke="#5cd85a"/><path d="M36 24 Q64 4 68 24 Q64 44 36 24" fill="#ffc8f0" opacity="0.75" stroke="#ff9ff3"/><circle cx="36" cy="24" r="4" fill="#ffd93d"/></svg>` },
+    { id: "wand", cat: "magic", name: "Magic Wand", w: 48, svg: `<svg viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg"><line x1="10" y1="46" x2="44" y2="12" stroke="#e8b923" stroke-width="4" stroke-linecap="round"/><polygon points="44,12 48,4 52,12 48,16" fill="#ffd93d"/></svg>` },
+    { id: "star-bling", cat: "magic", name: "Crystal Star", w: 44, svg: `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><polygon points="24,2 30,18 46,18 34,28 38,44 24,34 10,44 14,28 2,18 18,18" fill="#ffd93d" stroke="#fff8dc"/><circle cx="24" cy="22" r="5" fill="#fff" opacity="0.5"/></svg>` },
+  ],
+  byTheme: {
+    unicorn: ["unicorn", "star-bling", "gem-sapphire", "bow-satin", "butterfly"],
+    fairy: ["fairy-wings", "wand", "daisy", "butterfly", "rose-pink"],
+    princess: ["crown", "pearls", "gem-ruby", "ribbon-gold", "lace-trim"],
+  },
+};

@@ -13,40 +13,37 @@
   <div class="sky" aria-hidden="true"></div>
 
   <header class="header">
-    <div class="header__inner">
-      <h1><span class="header__spark">✦</span> Ceci's Dream Dress Studio <span class="header__spark">✦</span></h1>
-      <p class="header__sub">Design your own magical dress!</p>
-    </div>
+    <h1><span class="header__spark">✦</span> Ceci's Dream Dress Studio <span class="header__spark">✦</span></h1>
+    <p class="header__sub">Upload YOUR dress · decorate with real stickers · add glitter!</p>
   </header>
 
   <main class="game">
-    <aside class="panel panel--themes">
-      <h2>Pick a Theme</h2>
+    <aside class="panel panel--left">
+      <h2>Your Dress</h2>
+      <label class="upload-btn">
+        <input type="file" id="dressUpload" accept="image/*" hidden />
+        📷 Upload My Dress Photo
+      </label>
+      <button class="link-btn" id="btnTemplate" type="button" hidden>← Use template dress instead</button>
+
+      <h2>Theme</h2>
       <div class="themes">
-        <button class="theme-btn is-active" data-theme="unicorn" type="button">
-          <span class="theme-btn__icon">🦄</span>
-          <span>Unicorn</span>
-        </button>
-        <button class="theme-btn" data-theme="fairy" type="button">
-          <span class="theme-btn__icon">🧚</span>
-          <span>Fairy</span>
-        </button>
-        <button class="theme-btn" data-theme="princess" type="button">
-          <span class="theme-btn__icon">👑</span>
-          <span>Princess</span>
-        </button>
+        <button class="theme-btn is-active" data-theme="unicorn" type="button">🦄 Unicorn</button>
+        <button class="theme-btn" data-theme="fairy" type="button">🧚 Fairy</button>
+        <button class="theme-btn" data-theme="princess" type="button">👑 Princess</button>
       </div>
 
-      <h2>Dress Color</h2>
-      <div class="swatches" id="colorSwatches"></div>
-
-      <h2>Pattern</h2>
-      <div class="patterns" id="patterns">
-        <button class="pat is-active" data-pattern="solid" type="button" title="Solid">▣</button>
-        <button class="pat" data-pattern="dots" type="button" title="Dots">⚬</button>
-        <button class="pat" data-pattern="stripes" type="button" title="Stripes">≡</button>
-        <button class="pat" data-pattern="stars" type="button" title="Stars">✦</button>
-        <button class="pat" data-pattern="hearts" type="button" title="Hearts">♥</button>
+      <div id="templateControls">
+        <h2>Dress Color</h2>
+        <div class="swatches" id="colorSwatches"></div>
+        <h2>Pattern</h2>
+        <div class="patterns">
+          <button class="pat is-active" data-pattern="solid" type="button" title="Solid">▣</button>
+          <button class="pat" data-pattern="dots" type="button" title="Dots">⚬</button>
+          <button class="pat" data-pattern="stripes" type="button" title="Stripes">≡</button>
+          <button class="pat" data-pattern="stars" type="button" title="Stars">✦</button>
+          <button class="pat" data-pattern="hearts" type="button" title="Hearts">♥</button>
+        </div>
       </div>
     </aside>
 
@@ -54,67 +51,85 @@
       <div class="stage__frame">
         <div class="stage__label" id="themeLabel">Unicorn Magic</div>
         <div class="canvas-wrap" id="canvasWrap">
-          <svg class="dress-svg" viewBox="0 0 320 480" aria-label="Your dress">
+          <img class="dress-photo" id="dressPhoto" alt="Your uploaded dress" hidden />
+          <svg class="dress-svg" id="dressSvg" viewBox="0 0 320 480" aria-label="Dress template">
             <defs>
-              <pattern id="pat-dots" width="12" height="12" patternUnits="userSpaceOnUse">
-                <circle cx="6" cy="6" r="2.5" fill="currentColor" opacity="0.35"/>
-              </pattern>
-              <pattern id="pat-stripes" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-                <line x1="0" y1="0" x2="0" y2="10" stroke="currentColor" stroke-width="4" opacity="0.25"/>
-              </pattern>
-              <pattern id="pat-stars" width="20" height="20" patternUnits="userSpaceOnUse">
-                <text x="10" y="14" text-anchor="middle" font-size="10" fill="currentColor" opacity="0.4">✦</text>
-              </pattern>
-              <pattern id="pat-hearts" width="18" height="18" patternUnits="userSpaceOnUse">
-                <text x="9" y="13" text-anchor="middle" font-size="9" fill="currentColor" opacity="0.35">♥</text>
-              </pattern>
-              <linearGradient id="shine" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#fff" stop-opacity="0.35"/>
-                <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
-              </linearGradient>
+              <pattern id="pat-dots" width="12" height="12" patternUnits="userSpaceOnUse"><circle cx="6" cy="6" r="2.5" fill="currentColor" opacity="0.35"/></pattern>
+              <pattern id="pat-stripes" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="10" stroke="currentColor" stroke-width="4" opacity="0.25"/></pattern>
+              <pattern id="pat-stars" width="20" height="20" patternUnits="userSpaceOnUse"><text x="10" y="14" text-anchor="middle" font-size="10" fill="currentColor" opacity="0.4">✦</text></pattern>
+              <pattern id="pat-hearts" width="18" height="18" patternUnits="userSpaceOnUse"><text x="9" y="13" text-anchor="middle" font-size="9" fill="currentColor" opacity="0.35">♥</text></pattern>
+              <linearGradient id="shine" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#fff" stop-opacity="0.35"/><stop offset="100%" stop-color="#fff" stop-opacity="0"/></linearGradient>
             </defs>
-            <!-- Bodice -->
-            <path id="dressBodice" class="dress-part" d="M110 95 L160 75 L210 95 L205 175 L115 175 Z"/>
-            <!-- Skirt -->
-            <path id="dressSkirt" class="dress-part" d="M115 175 L205 175 L245 420 L75 420 Z"/>
-            <!-- Sleeves -->
-            <ellipse id="dressSleeveL" class="dress-part" cx="95" cy="130" rx="28" ry="22"/>
-            <ellipse id="dressSleeveR" class="dress-part" cx="225" cy="130" rx="28" ry="22"/>
-            <!-- Shine overlay -->
+            <path class="dress-part" d="M110 95 L160 75 L210 95 L205 175 L115 175 Z"/>
+            <path class="dress-part" d="M115 175 L205 175 L245 420 L75 420 Z"/>
+            <ellipse class="dress-part" cx="95" cy="130" rx="28" ry="22"/>
+            <ellipse class="dress-part" cx="225" cy="130" rx="28" ry="22"/>
             <path d="M110 95 L160 75 L210 95 L205 175 L115 175 Z" fill="url(#shine)" pointer-events="none"/>
-            <!-- Neckline detail -->
             <path d="M130 95 Q160 115 190 95" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2"/>
           </svg>
+          <canvas class="glitter-canvas" id="glitterCanvas"></canvas>
           <div class="stickers" id="stickerLayer"></div>
+          <div class="text-layer" id="textLayer"></div>
         </div>
-        <p class="stage__hint">Tap a sticker, then tap the dress to place it · Drag to move</p>
+        <p class="stage__hint" id="stageHint">Pick a sticker, then tap your dress to place it</p>
+      </div>
+
+      <div class="edit-bar" id="editBar" hidden>
+        <span class="edit-bar__label">Selected:</span>
+        <button class="act act--tiny" id="btnBigger" type="button">＋ Bigger</button>
+        <button class="act act--tiny" id="btnSmaller" type="button">－ Smaller</button>
+        <button class="act act--tiny" id="btnRotate" type="button">↻ Turn</button>
+        <button class="act act--tiny" id="btnFlip" type="button">⇄ Flip</button>
+        <button class="act act--tiny" id="btnFront" type="button">⬆ Front</button>
+        <button class="act act--tiny act--danger" id="btnDelete" type="button">✕ Delete</button>
       </div>
 
       <div class="stage__actions">
         <button class="act act--ghost" id="btnUndo" type="button">↩ Undo</button>
-        <button class="act act--ghost" id="btnClear" type="button">🗑 Clear All</button>
+        <button class="act act--ghost" id="btnClearDeco" type="button">Clear decorations</button>
         <button class="act act--magic" id="btnRandom" type="button">✨ Surprise Me!</button>
         <button class="act act--save" id="btnSave" type="button">📸 Save My Dress</button>
       </div>
     </section>
 
-    <aside class="panel panel--stickers">
-      <h2>Stickers <small id="stickerHint">(tap one!)</small></h2>
-      <div class="sticker-palette" id="stickerPalette"></div>
+    <aside class="panel panel--right">
+      <h2>Tools</h2>
+      <div class="tools">
+        <button class="tool is-active" data-tool="sticker" type="button">🎀 Stickers</button>
+        <button class="tool" data-tool="glitter" type="button">✨ Glitter</button>
+        <button class="tool" data-tool="text" type="button">💬 Name</button>
+      </div>
+
+      <div id="stickerTools">
+        <div class="cat-tabs" id="catTabs"></div>
+        <div class="sticker-palette" id="stickerPalette"></div>
+      </div>
+
+      <div id="glitterTools" hidden>
+        <p class="tool-help">Click &amp; drag on your dress to paint glitter!</p>
+        <div class="glitter-colors" id="glitterColors"></div>
+        <button class="act act--ghost act--wide" id="btnClearGlitter" type="button">Clear glitter</button>
+      </div>
+
+      <div id="textTools" hidden>
+        <p class="tool-help">Type your name, pick a color, then tap the dress!</p>
+        <input class="text-input" id="nameInput" type="text" value="Ceci" maxlength="20" />
+        <div class="swatches swatches--text" id="textColors"></div>
+      </div>
 
       <div class="selected-tip" id="selectedTip" hidden>
-        <p>Sticker selected! Tap the dress to place it.</p>
+        <p>Tap the dress to place your sticker!</p>
         <button class="act act--mini" id="btnDeselect" type="button">Cancel</button>
       </div>
 
       <div class="ceci-note">
-        <p>Made with love for <strong>Ceci</strong> 💗</p>
-        <p class="ceci-note__age">Age 7 · Fashion Designer</p>
+        <p>Made for <strong>Ceci</strong> 💗 · Age 7</p>
       </div>
     </aside>
   </main>
 
   <div class="toast" id="toast"></div>
+  <script src="stickers.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

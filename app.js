@@ -1,41 +1,57 @@
 (function () {
+  const LIB = window.CECI_STICKERS;
+  const STICKER_MAP = Object.fromEntries(LIB.items.map((s) => [s.id, s]));
+
   const THEMES = {
-    unicorn: {
-      label: "Unicorn Magic",
-      colors: ["#ffc8ec", "#ffb8e8", "#e8b4ff", "#b8d4ff", "#ffd4f0", "#fff0a8", "#ff9ff3", "#c8f0ff"],
-      stickers: ["🦄", "🌈", "✨", "⭐", "💫", "🎀", "💖", "🦋", "☁️", "🌟", "💜", "🎠"],
-    },
-    fairy: {
-      label: "Fairy Garden",
-      colors: ["#c8f5d8", "#b8f0c8", "#ffe8f0", "#e8ffc8", "#d4f5ff", "#fff5c8", "#ffc8e8", "#a8e6cf"],
-      stickers: ["🧚", "🌸", "🌺", "🦋", "✨", "🍄", "🌿", "💚", "🪄", "🌷", "💫", "🧚‍♀️"],
-    },
-    princess: {
-      label: "Royal Princess",
-      colors: ["#e8d4ff", "#ffd4e8", "#fff0c8", "#d4c8ff", "#ffc8d4", "#f0e6ff", "#ffe566", "#ffb8d4"],
-      stickers: ["👑", "💎", "🏰", "✨", "🎀", "💖", "⭐", "🪞", "👸", "💍", "🌹", "🎀"],
-    },
+    unicorn: { label: "Unicorn Magic", colors: ["#ffc8ec", "#ffb8e8", "#e8b4ff", "#b8d4ff", "#ffd4f0", "#fff0a8", "#ff9ff3", "#c8f0ff"] },
+    fairy: { label: "Fairy Garden", colors: ["#c8f5d8", "#b8f0c8", "#ffe8f0", "#e8ffc8", "#d4f5ff", "#fff5c8", "#ffc8e8", "#a8e6cf"] },
+    princess: { label: "Royal Princess", colors: ["#e8d4ff", "#ffd4e8", "#fff0c8", "#d4c8ff", "#ffc8d4", "#f0e6ff", "#ffe566", "#ffb8d4"] },
   };
+
+  const GLITTER_COLORS = ["#ffd93d", "#ff6eb4", "#ffffff", "#c56cf0", "#4d96ff", "#5cd85a", "#ff9ff3"];
 
   const state = {
     theme: "unicorn",
     color: "#ffc8ec",
     pattern: "solid",
-    pickedSticker: null,
+    customDress: false,
+    uploadUrl: null,
+    tool: "sticker",
+    stickerCat: "all",
+    pickedStickerId: null,
+    selectedId: null,
+    glitterColor: "#ffd93d",
+    textColor: "#ff6eb4",
+    textValue: "Ceci",
     stickers: [],
+    texts: [],
+    glitter: [],
     history: [],
   };
 
   const els = {
     body: document.body,
-    swatches: document.getElementById("colorSwatches"),
-    palette: document.getElementById("stickerPalette"),
-    layer: document.getElementById("stickerLayer"),
     canvasWrap: document.getElementById("canvasWrap"),
+    dressPhoto: document.getElementById("dressPhoto"),
+    dressSvg: document.getElementById("dressSvg"),
+    glitterCanvas: document.getElementById("glitterCanvas"),
+    layer: document.getElementById("stickerLayer"),
+    textLayer: document.getElementById("textLayer"),
+    swatches: document.getElementById("colorSwatches"),
+    catTabs: document.getElementById("catTabs"),
+    palette: document.getElementById("stickerPalette"),
     themeLabel: document.getElementById("themeLabel"),
     selectedTip: document.getElementById("selectedTip"),
+    editBar: document.getElementById("editBar"),
+    stageHint: document.getElementById("stageHint"),
+    templateControls: document.getElementById("templateControls"),
+    btnTemplate: document.getElementById("btnTemplate"),
     toast: document.getElementById("toast"),
+    nameInput: document.getElementById("nameInput"),
   };
+
+  const gCtx = els.glitterCanvas.getContext("2d");
+  let glitterDrawing = false;
 
   function toast(msg) {
     els.toast.textContent = msg;
@@ -44,65 +60,113 @@
     toast._t = setTimeout(() => els.toast.classList.remove("show"), 2800);
   }
 
+  function snapshot() {
+    return JSON.stringify({
+      stickers: state.stickers.map((s) => ({ ...s })),
+      texts: state.texts.map((t) => ({ ...t })),
+      glitter: state.glitter.map((g) => ({ ...g })),
+    });
+  }
+
+  function pushHistory() {
+    state.history.push(snapshot());
+    if (state.history.length > 25) state.history.shift();
+  }
+
+  function undo() {
+    if (!state.history.length) return toast("Nothing to undo!");
+    const prev = JSON.parse(state.history.pop());
+    state.stickers = prev.stickers;
+    state.texts = prev.texts;
+    state.glitter = prev.glitter;
+    state.selectedId = null;
+    renderAll();
+    toast("Undone!");
+  }
+
+  function renderAll() {
+    renderStickers();
+    renderTexts();
+    redrawGlitter();
+    updateEditBar();
+  }
+
+  /* ---- Dress upload / template ---- */
+  function setCustomDress(url) {
+    state.customDress = true;
+    state.uploadUrl = url;
+    els.dressPhoto.src = url;
+    els.dressPhoto.hidden = false;
+    els.dressSvg.style.display = "none";
+    els.templateControls.hidden = true;
+    els.btnTemplate.hidden = false;
+    toast("Your dress is ready to decorate! 📷");
+  }
+
+  function useTemplate() {
+    state.customDress = false;
+    state.uploadUrl = null;
+    els.dressPhoto.hidden = true;
+    els.dressSvg.style.display = "block";
+    els.templateControls.hidden = false;
+    els.btnTemplate.hidden = true;
+    applyDressStyle();
+    toast("Template dress is back!");
+  }
+
+  document.getElementById("dressUpload")?.addEventListener("change", (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) return toast("Please pick a photo!");
+    const reader = new FileReader();
+    reader.onload = () => setCustomDress(reader.result);
+    reader.readAsDataURL(file);
+  });
+
+  els.btnTemplate?.addEventListener("click", useTemplate);
+
+  /* ---- Template dress colors ---- */
   function applyDressStyle() {
     document.querySelectorAll(".dress-part").forEach((p) => p.setAttribute("fill", state.color));
-    document.documentElement.style.setProperty("--dress", state.color);
     updatePatternOverlay();
   }
 
   function updatePatternOverlay() {
     let overlay = document.getElementById("patternOverlay");
-    const svg = document.querySelector(".dress-svg");
-
-    if (state.pattern === "solid") {
+    const svg = els.dressSvg;
+    if (state.pattern === "solid" || state.customDress) {
       overlay?.remove();
-      document.querySelectorAll(".dress-part").forEach((p) => p.setAttribute("fill", state.color));
+      if (!state.customDress) document.querySelectorAll(".dress-part").forEach((p) => p.setAttribute("fill", state.color));
       return;
     }
-
     if (!overlay) {
       overlay = document.createElementNS("http://www.w3.org/2000/svg", "g");
       overlay.id = "patternOverlay";
       overlay.setAttribute("pointer-events", "none");
       svg.appendChild(overlay);
     }
-
     overlay.innerHTML = "";
-    const paths = [
-      { d: "M110 95 L160 75 L210 95 L205 175 L115 175 Z" },
-      { d: "M115 175 L205 175 L245 420 L75 420 Z" },
-      { d: "M95 130 m-28 0 a28 22 0 1 0 56 0 a28 22 0 1 0 -56 0" },
-      { d: "M225 130 m-28 0 a28 22 0 1 0 56 0 a28 22 0 1 0 -56 0" },
-    ];
-
-    paths.forEach(({ d }) => {
+    [
+      "M110 95 L160 75 L210 95 L205 175 L115 175 Z",
+      "M115 175 L205 175 L245 420 L75 420 Z",
+      "M95 130 m-28 0 a28 22 0 1 0 56 0 a28 22 0 1 0 -56 0",
+      "M225 130 m-28 0 a28 22 0 1 0 56 0 a28 22 0 1 0 -56 0",
+    ].forEach((d) => {
       const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
       p.setAttribute("d", d);
       p.setAttribute("fill", `url(#pat-${state.pattern})`);
-      p.style.color = shadeColor(state.color, -40);
       overlay.appendChild(p);
     });
-
     document.querySelectorAll(".dress-part").forEach((p) => p.setAttribute("fill", state.color));
   }
 
-  function shadeColor(hex, percent) {
-    const num = parseInt(hex.replace("#", ""), 16);
-    const r = Math.min(255, Math.max(0, (num >> 16) + percent));
-    const g = Math.min(255, Math.max(0, ((num >> 8) & 0xff) + percent));
-    const b = Math.min(255, Math.max(0, (num & 0xff) + percent));
-    return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, "0")}`;
-  }
-
   function renderSwatches() {
-    const t = THEMES[state.theme];
     els.swatches.innerHTML = "";
-    t.colors.forEach((c) => {
+    THEMES[state.theme].colors.forEach((c) => {
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "swatch" + (c === state.color ? " is-active" : "");
       btn.style.background = c;
-      btn.title = "Pick color";
       btn.addEventListener("click", () => {
         state.color = c;
         renderSwatches();
@@ -112,211 +176,462 @@
     });
   }
 
-  function renderPalette() {
-    const t = THEMES[state.theme];
-    els.palette.innerHTML = "";
-    t.stickers.forEach((emoji) => {
+  /* ---- Tools ---- */
+  function setTool(tool) {
+    state.tool = tool;
+    state.pickedStickerId = null;
+    state.selectedId = null;
+    document.querySelectorAll(".tool").forEach((b) => b.classList.toggle("is-active", b.dataset.tool === tool));
+    document.getElementById("stickerTools").hidden = tool !== "sticker";
+    document.getElementById("glitterTools").hidden = tool !== "glitter";
+    document.getElementById("textTools").hidden = tool !== "text";
+    els.selectedTip.hidden = true;
+    els.canvasWrap.classList.toggle("tool-glitter", tool === "glitter");
+    els.canvasWrap.classList.toggle("tool-text", tool === "text");
+    const hints = {
+      sticker: "Pick a sticker, then tap your dress to place it",
+      glitter: "Click and drag to paint glitter on your dress!",
+      text: "Type your name, then tap the dress to add it!",
+    };
+    els.stageHint.textContent = hints[tool];
+    renderPalette();
+    updateEditBar();
+  }
+
+  document.querySelectorAll(".tool").forEach((b) => b.addEventListener("click", () => setTool(b.dataset.tool)));
+
+  /* ---- Sticker palette ---- */
+  function renderCatTabs() {
+    els.catTabs.innerHTML = "";
+    [{ id: "all", label: "All" }, ...LIB.categories].forEach((cat) => {
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.className = "palette-item" + (state.pickedSticker === emoji ? " is-picked" : "");
-      btn.textContent = emoji;
-      btn.addEventListener("click", () => pickSticker(emoji));
+      btn.className = "cat-tab" + (state.stickerCat === cat.id ? " is-active" : "");
+      btn.textContent = cat.label;
+      btn.addEventListener("click", () => {
+        state.stickerCat = cat.id;
+        renderCatTabs();
+        renderPalette();
+      });
+      els.catTabs.appendChild(btn);
+    });
+  }
+
+  function renderPalette() {
+    els.palette.innerHTML = "";
+    let items = LIB.items;
+    if (state.stickerCat !== "all") items = items.filter((s) => s.cat === state.stickerCat);
+
+    items.forEach((item) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "palette-item" + (state.pickedStickerId === item.id ? " is-picked" : "");
+      btn.title = item.name;
+      btn.innerHTML = item.svg;
+      btn.addEventListener("click", () => {
+        if (state.tool !== "sticker") setTool("sticker");
+        state.pickedStickerId = state.pickedStickerId === item.id ? null : item.id;
+        state.selectedId = null;
+        renderPalette();
+        els.selectedTip.hidden = !state.pickedStickerId;
+        updateEditBar();
+      });
       els.palette.appendChild(btn);
     });
   }
 
-  function pickSticker(emoji) {
-    state.pickedSticker = state.pickedSticker === emoji ? null : emoji;
-    renderPalette();
-    els.selectedTip.hidden = !state.pickedSticker;
-    document.querySelectorAll(".sticker").forEach((s) => s.classList.remove("is-selected"));
+  function pickStickerById(id) {
+    return STICKER_MAP[id];
   }
 
-  function pushHistory() {
-    state.history.push(JSON.stringify(state.stickers.map((s) => ({ ...s }))));
-    if (state.history.length > 20) state.history.shift();
-  }
-
-  function addSticker(emoji, xPct, yPct) {
+  /* ---- Placed stickers ---- */
+  function addSticker(stickerId, x, y) {
     pushHistory();
-    const id = "s" + Date.now() + Math.random().toString(36).slice(2, 6);
-    state.stickers.push({ id, emoji, x: xPct, y: yPct, scale: 1 });
+    const def = pickStickerById(stickerId);
+    state.stickers.push({
+      id: "s" + Date.now(),
+      stickerId,
+      x,
+      y,
+      scale: 1,
+      rotation: 0,
+      flip: 1,
+      z: state.stickers.length + 1,
+    });
+    state.pickedStickerId = null;
+    els.selectedTip.hidden = true;
+    renderPalette();
     renderStickers();
-    toast("So pretty! ✨");
+    toast(def.name + " added! ✨");
+  }
+
+  function addText(x, y) {
+    const text = (els.nameInput?.value || "Ceci").trim();
+    if (!text) return toast("Type a name first!");
+    pushHistory();
+    state.texts.push({
+      id: "t" + Date.now(),
+      text,
+      x,
+      y,
+      scale: 1,
+      rotation: 0,
+      color: state.textColor,
+      z: 100 + state.texts.length,
+    });
+    renderTexts();
+    toast('Added "' + text + '"!');
+  }
+
+  function getItem(id) {
+    return state.stickers.find((s) => s.id === id) || state.texts.find((t) => t.id === id);
   }
 
   function renderStickers() {
     els.layer.innerHTML = "";
-    state.stickers.forEach((s) => {
+    [...state.stickers].sort((a, b) => a.z - b.z).forEach((s) => {
+      const def = pickStickerById(s.stickerId);
+      if (!def) return;
       const el = document.createElement("div");
-      el.className = "sticker";
+      el.className = "sticker" + (state.selectedId === s.id ? " is-selected" : "");
       el.dataset.id = s.id;
-      el.textContent = s.emoji;
       el.style.left = s.x + "%";
       el.style.top = s.y + "%";
-      el.style.transform = `translate(-50%, -50%) scale(${s.scale})`;
-      setupDrag(el, s);
-      el.addEventListener("dblclick", (e) => {
-        e.stopPropagation();
-        removeSticker(s.id);
-      });
+      el.style.zIndex = s.z;
+      el.style.width = def.w + "px";
+      el.innerHTML = def.svg;
+      el.style.transform = `translate(-50%, -50%) scale(${s.scale * s.flip}, ${s.scale}) rotate(${s.rotation}deg)`;
+      setupDrag(el, s, "sticker");
       el.addEventListener("click", (e) => {
         e.stopPropagation();
-        document.querySelectorAll(".sticker").forEach((x) => x.classList.remove("is-selected"));
-        el.classList.add("is-selected");
+        selectItem(s.id);
       });
       els.layer.appendChild(el);
     });
   }
 
-  function removeSticker(id) {
-    pushHistory();
-    state.stickers = state.stickers.filter((s) => s.id !== id);
-    renderStickers();
+  function renderTexts() {
+    els.textLayer.innerHTML = "";
+    state.texts.forEach((t) => {
+      const el = document.createElement("div");
+      el.className = "text-deco" + (state.selectedId === t.id ? " is-selected" : "");
+      el.dataset.id = t.id;
+      el.textContent = t.text;
+      el.style.left = t.x + "%";
+      el.style.top = t.y + "%";
+      el.style.color = t.color;
+      el.style.zIndex = t.z;
+      el.style.transform = `translate(-50%, -50%) scale(${t.scale}) rotate(${t.rotation}deg)`;
+      setupDrag(el, t, "text");
+      el.addEventListener("click", (e) => {
+        e.stopPropagation();
+        selectItem(t.id);
+      });
+      els.textLayer.appendChild(el);
+    });
   }
 
-  function setupDrag(el, data) {
-    let startX, startY, origX, origY;
+  function selectItem(id) {
+    state.selectedId = id;
+    state.pickedStickerId = null;
+    els.selectedTip.hidden = true;
+    renderPalette();
+    renderStickers();
+    renderTexts();
+    updateEditBar();
+  }
 
+  function updateEditBar() {
+    const item = state.selectedId ? getItem(state.selectedId) : null;
+    els.editBar.hidden = !item;
+  }
+
+  function setupDrag(el, data, kind) {
+    let sx, sy, ox, oy;
+    function pt(e) {
+      return e.touches ? e.touches[0] : e;
+    }
     function onStart(e) {
+      if (state.tool === "glitter") return;
       e.preventDefault();
       e.stopPropagation();
-      const pt = e.touches ? e.touches[0] : e;
-      startX = pt.clientX;
-      startY = pt.clientY;
-      origX = data.x;
-      origY = data.y;
+      selectItem(data.id);
+      const p = pt(e);
+      sx = p.clientX;
+      sy = p.clientY;
+      ox = data.x;
+      oy = data.y;
       pushHistory();
       document.addEventListener("mousemove", onMove);
       document.addEventListener("mouseup", onEnd);
       document.addEventListener("touchmove", onMove, { passive: false });
       document.addEventListener("touchend", onEnd);
     }
-
     function onMove(e) {
       e.preventDefault();
-      const pt = e.touches ? e.touches[0] : e;
-      const rect = els.canvasWrap.getBoundingClientRect();
-      const dx = ((pt.clientX - startX) / rect.width) * 100;
-      const dy = ((pt.clientY - startY) / rect.height) * 100;
-      data.x = Math.max(5, Math.min(95, origX + dx));
-      data.y = Math.max(5, Math.min(95, origY + dy));
+      const p = pt(e);
+      const r = els.canvasWrap.getBoundingClientRect();
+      data.x = Math.max(3, Math.min(97, ox + ((p.clientX - sx) / r.width) * 100));
+      data.y = Math.max(3, Math.min(97, oy + ((p.clientY - sy) / r.height) * 100));
       el.style.left = data.x + "%";
       el.style.top = data.y + "%";
     }
-
     function onEnd() {
       document.removeEventListener("mousemove", onMove);
       document.removeEventListener("mouseup", onEnd);
       document.removeEventListener("touchmove", onMove);
       document.removeEventListener("touchend", onEnd);
     }
-
     el.addEventListener("mousedown", onStart);
     el.addEventListener("touchstart", onStart, { passive: false });
+    el.addEventListener("dblclick", (e) => {
+      e.stopPropagation();
+      pushHistory();
+      if (kind === "sticker") state.stickers = state.stickers.filter((s) => s.id !== data.id);
+      else state.texts = state.texts.filter((t) => t.id !== data.id);
+      state.selectedId = null;
+      renderAll();
+    });
   }
 
-  function setTheme(name) {
-    state.theme = name;
-    state.color = THEMES[name].colors[0];
-    state.pickedSticker = null;
-    els.body.dataset.theme = name;
-    els.themeLabel.textContent = THEMES[name].label;
-    document.querySelectorAll(".theme-btn").forEach((b) => {
-      b.classList.toggle("is-active", b.dataset.theme === name);
-    });
-    renderSwatches();
-    renderPalette();
-    applyDressStyle();
-    els.selectedTip.hidden = true;
-    toast(THEMES[name].label + " theme! ✨");
+  /* ---- Glitter ---- */
+  function resizeGlitterCanvas() {
+    const r = els.canvasWrap.getBoundingClientRect();
+    els.glitterCanvas.width = r.width * 2;
+    els.glitterCanvas.height = r.height * 2;
+    els.glitterCanvas.style.width = r.width + "px";
+    els.glitterCanvas.style.height = r.height + "px";
+    redrawGlitter();
   }
 
-  els.canvasWrap.addEventListener("click", (e) => {
-    if (e.target.closest(".sticker")) return;
-    if (!state.pickedSticker) return;
-    const rect = els.canvasWrap.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
-    addSticker(state.pickedSticker, x, y);
-  });
+  function drawGlitterPoint(xPct, yPct) {
+    const w = els.glitterCanvas.width;
+    const h = els.glitterCanvas.height;
+    const x = (xPct / 100) * w;
+    const y = (yPct / 100) * h;
+    const size = 4 + Math.random() * 8;
+    state.glitter.push({ x: xPct, y: yPct, color: state.glitterColor, size });
+    gCtx.save();
+    gCtx.fillStyle = state.glitterColor;
+    gCtx.shadowColor = state.glitterColor;
+    gCtx.shadowBlur = 8;
+    gCtx.beginPath();
+    gCtx.arc(x, y, size, 0, Math.PI * 2);
+    gCtx.fill();
+    gCtx.fillStyle = "#fff";
+    gCtx.globalAlpha = 0.6;
+    gCtx.beginPath();
+    gCtx.arc(x - size * 0.2, y - size * 0.2, size * 0.3, 0, Math.PI * 2);
+    gCtx.fill();
+    gCtx.restore();
+  }
 
-  document.querySelectorAll(".theme-btn").forEach((btn) => {
-    btn.addEventListener("click", () => setTheme(btn.dataset.theme));
-  });
-
-  document.querySelectorAll(".pat").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      state.pattern = btn.dataset.pattern;
-      document.querySelectorAll(".pat").forEach((b) => b.classList.toggle("is-active", b === btn));
-      applyDressStyle();
+  function redrawGlitter() {
+    gCtx.clearRect(0, 0, els.glitterCanvas.width, els.glitterCanvas.height);
+    state.glitter.forEach((g) => {
+      const x = (g.x / 100) * els.glitterCanvas.width;
+      const y = (g.y / 100) * els.glitterCanvas.height;
+      gCtx.save();
+      gCtx.fillStyle = g.color;
+      gCtx.shadowColor = g.color;
+      gCtx.shadowBlur = 6;
+      gCtx.beginPath();
+      gCtx.arc(x, y, g.size, 0, Math.PI * 2);
+      gCtx.fill();
+      gCtx.restore();
     });
-  });
+  }
 
-  document.getElementById("btnDeselect")?.addEventListener("click", () => pickSticker(null));
+  function canvasPoint(e) {
+    const r = els.canvasWrap.getBoundingClientRect();
+    const p = e.touches ? e.touches[0] : e;
+    return {
+      x: ((p.clientX - r.left) / r.width) * 100,
+      y: ((p.clientY - r.top) / r.height) * 100,
+    };
+  }
 
-  document.getElementById("btnClear")?.addEventListener("click", () => {
-    if (!state.stickers.length) return;
-    pushHistory();
-    state.stickers = [];
-    renderStickers();
-    toast("All clear! Start fresh 💗");
-  });
+  els.canvasWrap.addEventListener("mousedown", onCanvasDown);
+  els.canvasWrap.addEventListener("touchstart", onCanvasDown, { passive: false });
 
-  document.getElementById("btnUndo")?.addEventListener("click", () => {
-    if (!state.history.length) {
-      toast("Nothing to undo!");
+  function onCanvasDown(e) {
+    if (e.target.closest(".sticker, .text-deco")) return;
+    const pt = canvasPoint(e);
+
+    if (state.tool === "glitter") {
+      pushHistory();
+      glitterDrawing = true;
+      drawGlitterPoint(pt.x, pt.y);
+      const onMove = (ev) => {
+        ev.preventDefault();
+        drawGlitterPoint(canvasPoint(ev).x, canvasPoint(ev).y);
+      };
+      const onEnd = () => {
+        glitterDrawing = false;
+        document.removeEventListener("mousemove", onMove);
+        document.removeEventListener("mouseup", onEnd);
+        document.removeEventListener("touchmove", onMove);
+        document.removeEventListener("touchend", onEnd);
+      };
+      document.addEventListener("mousemove", onMove);
+      document.addEventListener("mouseup", onEnd);
+      document.addEventListener("touchmove", onMove, { passive: false });
+      document.addEventListener("touchend", onEnd);
       return;
     }
-    const prev = state.history.pop();
-    state.stickers = JSON.parse(prev);
-    renderStickers();
-    toast("Undone!");
+
+    if (state.tool === "text") {
+      addText(pt.x, pt.y);
+      return;
+    }
+
+    if (state.pickedStickerId) addSticker(state.pickedStickerId, pt.x, pt.y);
+    else {
+      state.selectedId = null;
+      updateEditBar();
+      renderStickers();
+      renderTexts();
+    }
+  }
+
+  /* Glitter colors */
+  const gc = document.getElementById("glitterColors");
+  GLITTER_COLORS.forEach((c) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "swatch" + (c === state.glitterColor ? " is-active" : "");
+    b.style.background = c;
+    if (c === "#ffffff") b.style.border = "2px solid #ddd";
+    b.addEventListener("click", () => {
+      state.glitterColor = c;
+      gc.querySelectorAll(".swatch").forEach((x) => x.classList.remove("is-active"));
+      b.classList.add("is-active");
+    });
+    gc.appendChild(b);
   });
+
+  const tc = document.getElementById("textColors");
+  ["#ff6eb4", "#c56cf0", "#ffd93d", "#4d96ff", "#ffffff", "#e84393", "#5cd85a"].forEach((c) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "swatch" + (c === state.textColor ? " is-active" : "");
+    b.style.background = c;
+    b.addEventListener("click", () => {
+      state.textColor = c;
+      tc.querySelectorAll(".swatch").forEach((x) => x.classList.remove("is-active"));
+      b.classList.add("is-active");
+    });
+    tc.appendChild(b);
+  });
+
+  els.nameInput?.addEventListener("input", (e) => {
+    state.textValue = e.target.value;
+  });
+
+  document.getElementById("btnClearGlitter")?.addEventListener("click", () => {
+    if (!state.glitter.length) return;
+    pushHistory();
+    state.glitter = [];
+    redrawGlitter();
+    toast("Glitter cleared!");
+  });
+
+  /* ---- Edit bar ---- */
+  function editSelected(fn) {
+    const item = getItem(state.selectedId);
+    if (!item) return;
+    pushHistory();
+    fn(item);
+    renderAll();
+  }
+
+  document.getElementById("btnBigger")?.addEventListener("click", () => editSelected((i) => (i.scale = Math.min(2.5, i.scale + 0.15))));
+  document.getElementById("btnSmaller")?.addEventListener("click", () => editSelected((i) => (i.scale = Math.max(0.4, i.scale - 0.15))));
+  document.getElementById("btnRotate")?.addEventListener("click", () => editSelected((i) => (i.rotation = (i.rotation + 25) % 360)));
+  document.getElementById("btnFlip")?.addEventListener("click", () => editSelected((i) => { if ("flip" in i) i.flip *= -1; }));
+  document.getElementById("btnFront")?.addEventListener("click", () => editSelected((i) => (i.z = Math.max(...state.stickers.map((s) => s.z), ...state.texts.map((t) => t.z), 0) + 1)));
+  document.getElementById("btnDelete")?.addEventListener("click", () => {
+    if (!state.selectedId) return;
+    pushHistory();
+    state.stickers = state.stickers.filter((s) => s.id !== state.selectedId);
+    state.texts = state.texts.filter((t) => t.id !== state.selectedId);
+    state.selectedId = null;
+    renderAll();
+    toast("Deleted!");
+  });
+
+  document.getElementById("btnDeselect")?.addEventListener("click", () => {
+    state.pickedStickerId = null;
+    els.selectedTip.hidden = true;
+    renderPalette();
+  });
+
+  document.getElementById("btnClearDeco")?.addEventListener("click", () => {
+    if (!state.stickers.length && !state.texts.length && !state.glitter.length) return;
+    pushHistory();
+    state.stickers = [];
+    state.texts = [];
+    state.glitter = [];
+    state.selectedId = null;
+    renderAll();
+    toast("All decorations cleared!");
+  });
+
+  document.getElementById("btnUndo")?.addEventListener("click", undo);
 
   document.getElementById("btnRandom")?.addEventListener("click", () => {
     const themes = Object.keys(THEMES);
     setTheme(themes[Math.floor(Math.random() * themes.length)]);
-    const t = THEMES[state.theme];
-    state.color = t.colors[Math.floor(Math.random() * t.colors.length)];
-    const pats = ["solid", "dots", "stripes", "stars", "hearts"];
-    state.pattern = pats[Math.floor(Math.random() * pats.length)];
-    document.querySelectorAll(".pat").forEach((b) => b.classList.toggle("is-active", b.dataset.pattern === state.pattern));
-    applyDressStyle();
-    renderSwatches();
+    if (!state.customDress) {
+      state.color = THEMES[state.theme].colors[Math.floor(Math.random() * THEMES[state.theme].colors.length)];
+      const pats = ["solid", "dots", "stripes", "stars", "hearts"];
+      state.pattern = pats[Math.floor(Math.random() * pats.length)];
+      document.querySelectorAll(".pat").forEach((b) => b.classList.toggle("is-active", b.dataset.pattern === state.pattern));
+      applyDressStyle();
+      renderSwatches();
+    }
     state.stickers = [];
+    state.texts = [];
+    state.glitter = [];
     state.history = [];
-    const count = 4 + Math.floor(Math.random() * 5);
-    for (let i = 0; i < count; i++) {
-      const emoji = t.stickers[Math.floor(Math.random() * t.stickers.length)];
+    const fav = LIB.byTheme[state.theme];
+    for (let i = 0; i < 5; i++) {
+      const id = fav[Math.floor(Math.random() * fav.length)];
       state.stickers.push({
         id: "s" + Date.now() + i,
-        emoji,
-        x: 20 + Math.random() * 60,
-        y: 25 + Math.random() * 55,
-        scale: 1,
+        stickerId: id,
+        x: 15 + Math.random() * 70,
+        y: 20 + Math.random() * 60,
+        scale: 0.8 + Math.random() * 0.6,
+        rotation: Math.floor(Math.random() * 40 - 20),
+        flip: 1,
+        z: i,
       });
     }
-    renderStickers();
-    toast("Surprise dress! 🎉");
+    for (let i = 0; i < 30; i++) {
+      state.glitter.push({
+        x: 10 + Math.random() * 80,
+        y: 15 + Math.random() * 75,
+        color: GLITTER_COLORS[Math.floor(Math.random() * GLITTER_COLORS.length)],
+        size: 4 + Math.random() * 6,
+      });
+    }
+    renderAll();
+    toast("Surprise outfit! 🎉");
   });
 
   document.getElementById("btnSave")?.addEventListener("click", async () => {
-    toast("Saving your masterpiece...");
+    toast("Saving...");
     try {
       const html2canvas = await loadHtml2Canvas();
-      const canvas = await html2canvas(els.canvasWrap, {
-        backgroundColor: null,
-        scale: 2,
-        useCORS: true,
-      });
+      const canvas = await html2canvas(els.canvasWrap, { backgroundColor: "#fff5fc", scale: 2, useCORS: true });
       const link = document.createElement("a");
       link.download = "ceci-dress-" + Date.now() + ".png";
       link.href = canvas.toDataURL("image/png");
       link.click();
-      toast("Saved! Check your downloads 📸");
+      toast("Saved! Check downloads 📸");
     } catch {
-      toast("Tap screenshot to save your dress! 📸");
+      toast("Try a screenshot to save!");
     }
   });
 
@@ -331,5 +646,30 @@
     });
   }
 
+  function setTheme(name) {
+    state.theme = name;
+    if (!state.customDress) state.color = THEMES[name].colors[0];
+    els.body.dataset.theme = name;
+    els.themeLabel.textContent = THEMES[name].label;
+    document.querySelectorAll(".theme-btn").forEach((b) => b.classList.toggle("is-active", b.dataset.theme === name));
+    renderSwatches();
+    if (!state.customDress) applyDressStyle();
+    toast(THEMES[name].label + "!");
+  }
+
+  document.querySelectorAll(".theme-btn").forEach((b) => b.addEventListener("click", () => setTheme(b.dataset.theme)));
+  document.querySelectorAll(".pat").forEach((b) => b.addEventListener("click", () => {
+    state.pattern = b.dataset.pattern;
+    document.querySelectorAll(".pat").forEach((x) => x.classList.toggle("is-active", x === b));
+    applyDressStyle();
+  }));
+
+  window.addEventListener("resize", resizeGlitterCanvas);
+
+  renderCatTabs();
+  renderPalette();
+  renderSwatches();
   setTheme("unicorn");
+  setTool("sticker");
+  requestAnimationFrame(resizeGlitterCanvas);
 })();
