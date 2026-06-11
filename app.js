@@ -1,4 +1,5 @@
 (function () {
+  const APP_VERSION = window.CECI_APP_VERSION || "1.0.3";
   const LIB = window.CECI_STICKERS;
   const STICKER_MAP = Object.fromEntries(LIB.items.map((s) => [s.id, s]));
 
@@ -33,6 +34,7 @@
     body: document.body,
     canvasWrap: document.getElementById("canvasWrap"),
     dressPhoto: document.getElementById("dressPhoto"),
+    dressPhotoBg: document.getElementById("dressPhotoBg"),
     dressSvg: document.getElementById("dressSvg"),
     glitterCanvas: document.getElementById("glitterCanvas"),
     layer: document.getElementById("stickerLayer"),
@@ -48,7 +50,15 @@
     btnTemplate: document.getElementById("btnTemplate"),
     toast: document.getElementById("toast"),
     nameInput: document.getElementById("nameInput"),
+    uploadStatus: document.getElementById("uploadStatus"),
+    dressUpload: document.getElementById("dressUpload"),
   };
+
+  /* ---- Version display ---- */
+  const verLabel = "v" + APP_VERSION;
+  document.getElementById("versionBadge") && (document.getElementById("versionBadge").textContent = verLabel);
+  document.getElementById("versionFoot") && (document.getElementById("versionFoot").textContent = verLabel);
+  document.title = "Ceci's Dream Dress Studio " + verLabel;
 
   const gCtx = els.glitterCanvas.getContext("2d");
   let glitterDrawing = false;
@@ -91,56 +101,113 @@
     updateEditBar();
   }
 
-  /* ---- Dress upload / template ---- */
+  function setUploadStatus(msg, show) {
+    if (!els.uploadStatus) return;
+    els.uploadStatus.textContent = msg || "";
+    els.uploadStatus.hidden = !show;
+  }
+
+  function showUploadedPhoto(url) {
+    els.dressPhotoBg.style.backgroundImage = "url(" + url + ")";
+    els.dressPhotoBg.classList.add("is-visible");
+    els.dressPhoto.src = url;
+    els.dressPhoto.classList.add("is-visible");
+    els.dressSvg.classList.add("is-hidden");
+    els.canvasWrap.classList.add("has-upload");
+    setUploadStatus("Your photo is loaded!", true);
+    requestAnimationFrame(() => {
+      resizeGlitterCanvas();
+      setTimeout(resizeGlitterCanvas, 100);
+      setTimeout(resizeGlitterCanvas, 400);
+    });
+  }
+
+  function hideUploadedPhoto() {
+    els.dressPhotoBg.style.backgroundImage = "";
+    els.dressPhotoBg.classList.remove("is-visible");
+    els.dressPhoto.classList.remove("is-visible");
+    els.dressPhoto.removeAttribute("src");
+    els.dressSvg.classList.remove("is-hidden");
+    els.canvasWrap.classList.remove("has-upload");
+    setUploadStatus("", false);
+  }
+
+  /** Resize/compress for Android memory + display reliability */
+  function preparePhotoUrl(rawUrl, callback) {
+    const img = new Image();
+    img.onload = () => {
+      const maxSide = 1400;
+      let w = img.naturalWidth || img.width;
+      let h = img.naturalHeight || img.height;
+      if (!w || !h) return callback(rawUrl);
+      const scale = Math.min(1, maxSide / Math.max(w, h));
+      w = Math.max(1, Math.round(w * scale));
+      h = Math.max(1, Math.round(h * scale));
+      try {
+        const c = document.createElement("canvas");
+        c.width = w;
+        c.height = h;
+        const ctx = c.getContext("2d");
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, w, h);
+        ctx.drawImage(img, 0, 0, w, h);
+        callback(c.toDataURL("image/jpeg", 0.9));
+      } catch {
+        callback(rawUrl);
+      }
+    };
+    img.onerror = () => callback(rawUrl);
+    img.src = rawUrl;
+  }
+
   function setCustomDress(url) {
     state.customDress = true;
     state.uploadUrl = url;
-    els.canvasWrap.classList.add("has-upload");
-    els.dressSvg.classList.add("is-hidden");
     els.templateControls.hidden = true;
     els.btnTemplate.hidden = false;
-
-    els.dressPhoto.onload = () => {
-      els.dressPhoto.classList.add("is-visible");
-      resizeGlitterCanvas();
+    setUploadStatus("Loading photo…", true);
+    preparePhotoUrl(url, (readyUrl) => {
+      state.uploadUrl = readyUrl;
+      showUploadedPhoto(readyUrl);
       toast("Your dress is ready to decorate! 📷");
-    };
-    els.dressPhoto.onerror = () => {
-      toast("Couldn't load that photo — try JPG or PNG!");
-      useTemplate();
-    };
-    els.dressPhoto.src = url;
-    if (els.dressPhoto.complete) els.dressPhoto.onload();
+    });
   }
 
   function useTemplate() {
     state.customDress = false;
     state.uploadUrl = null;
-    els.canvasWrap.classList.remove("has-upload");
-    els.dressPhoto.classList.remove("is-visible");
-    els.dressPhoto.removeAttribute("src");
-    els.dressSvg.classList.remove("is-hidden");
+    hideUploadedPhoto();
     els.templateControls.hidden = false;
     els.btnTemplate.hidden = true;
-    document.getElementById("dressUpload").value = "";
+    if (els.dressUpload) els.dressUpload.value = "";
     applyDressStyle();
     resizeGlitterCanvas();
     toast("Template dress is back!");
   }
 
-  document.getElementById("dressUpload")?.addEventListener("change", (e) => {
-    const file = e.target.files?.[0];
+  function handleFilePick(file) {
     if (!file) return;
     const ok =
       (file.type && file.type.startsWith("image/")) ||
-      /\.(jpe?g|png|gif|webp|heic|heif|bmp|avif)$/i.test(file.name);
-    if (!ok) return toast("Please pick a photo (JPG, PNG, etc.)!");
+      /\.(jpe?g|png|gif|webp|heic|heif|bmp|avif)$/i.test(file.name || "");
+    if (!ok) return toast("Please pick a photo (JPG or PNG)!");
+    setUploadStatus("Reading photo…", true);
+    toast("Loading your dress…");
     const reader = new FileReader();
     reader.onload = () => {
       if (typeof reader.result === "string") setCustomDress(reader.result);
+      else toast("Couldn't read that file.");
     };
     reader.onerror = () => toast("Couldn't read that file — try again!");
     reader.readAsDataURL(file);
+  }
+
+  document.getElementById("btnUpload")?.addEventListener("click", () => {
+    els.dressUpload?.click();
+  });
+
+  els.dressUpload?.addEventListener("change", (e) => {
+    handleFilePick(e.target.files?.[0]);
   });
 
   els.btnTemplate?.addEventListener("click", useTemplate);
@@ -712,6 +779,7 @@
   }));
 
   window.addEventListener("resize", resizeGlitterCanvas);
+  window.addEventListener("orientationchange", () => setTimeout(resizeGlitterCanvas, 300));
 
   renderCatTabs();
   renderPalette();

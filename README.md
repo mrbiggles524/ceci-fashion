@@ -1,6 +1,8 @@
 # Ceci's Dream Dress Studio
 
-A fashion dress-decorating game for Ceci (age 7).
+**Current version:** see `version.js` → `CECI_APP_VERSION` (also shown in app footer).
+
+Bump `CECI_APP_VERSION` in `version.js` and the `?v=` on the version.js script tag in `index.html` on every update so phones load fresh files.
 
 ## Play locally
 

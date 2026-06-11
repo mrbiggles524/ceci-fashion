@@ -2,12 +2,17 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
   <title>Ceci's Dream Dress Studio ✨</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bubblegum+Sans&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css" />
+  <script src="version.js?v=1.0.3"></script>
+  <script>
+    document.write('<link rel="stylesheet" href="styles.css?v=' + window.CECI_APP_VERSION + '" />');
+  </script>
 </head>
 <body data-theme="unicorn">
   <div class="sky" aria-hidden="true"></div>
@@ -15,15 +20,15 @@
   <header class="header">
     <h1><span class="header__spark">✦</span> Ceci's Dream Dress Studio <span class="header__spark">✦</span></h1>
     <p class="header__sub">Upload YOUR dress · decorate with real stickers · add glitter!</p>
+    <p class="version-badge" id="versionBadge">v…</p>
   </header>
 
   <main class="game">
     <aside class="panel panel--left">
       <h2>Your Dress</h2>
-      <label class="upload-btn" for="dressUpload">
-        📷 Upload My Dress Photo
-      </label>
-      <input type="file" id="dressUpload" class="file-input" accept="image/*,.heic,.heif" />
+      <button type="button" class="upload-btn" id="btnUpload">📷 Upload My Dress Photo</button>
+      <input type="file" id="dressUpload" class="file-input" accept="image/jpeg,image/png,image/webp,image/gif,image/*" />
+      <p class="upload-status" id="uploadStatus" hidden></p>
       <button class="link-btn" id="btnTemplate" type="button" hidden>← Use template dress instead</button>
 
       <h2>Theme</h2>
@@ -51,7 +56,9 @@
       <div class="stage__frame">
         <div class="stage__label" id="themeLabel">Unicorn Magic</div>
         <div class="canvas-wrap" id="canvasWrap">
-          <img class="dress-photo" id="dressPhoto" alt="Your uploaded dress" />
+          <!-- Photo layer: bg div works reliably on Android + img for save/export -->
+          <div class="dress-photo-bg" id="dressPhotoBg" aria-hidden="true"></div>
+          <img class="dress-photo" id="dressPhoto" alt="Your uploaded dress" crossorigin="anonymous" />
           <svg class="dress-svg" id="dressSvg" viewBox="0 0 320 480" aria-label="Dress template">
             <defs>
               <pattern id="pat-dots" width="12" height="12" patternUnits="userSpaceOnUse"><circle cx="6" cy="6" r="2.5" fill="currentColor" opacity="0.35"/></pattern>
@@ -106,7 +113,7 @@
       </div>
 
       <div id="glitterTools" hidden>
-        <p class="tool-help">Click &amp; drag on your dress to paint glitter!</p>
+        <p class="tool-help">Tap &amp; drag on your dress to paint glitter!</p>
         <div class="glitter-colors" id="glitterColors"></div>
         <button class="act act--ghost act--wide" id="btnClearGlitter" type="button">Clear glitter</button>
       </div>
@@ -128,8 +135,15 @@
     </aside>
   </main>
 
+  <footer class="app-foot">
+    <span>Ceci's Dream Dress Studio</span>
+    <span id="versionFoot">v…</span>
+  </footer>
+
   <div class="toast" id="toast"></div>
-  <script src="stickers.js"></script>
-  <script src="app.js"></script>
+  <script>
+    document.write('<script src="stickers.js?v=' + window.CECI_APP_VERSION + '"><\/script>');
+    document.write('<script src="app.js?v=' + window.CECI_APP_VERSION + '"><\/script>');
+  </script>
 </body>
 </html>
